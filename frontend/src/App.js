@@ -19,45 +19,37 @@ import VendorTwoPage from "./pages/VendorTwoPage";
 import VendorTwoDetailsPage from "./pages/VendorTwoDetailsPage";
 import BecomeSellerPage from "./pages/BecomeSellerPage";
 import WishlistPage from "./pages/WishlistPage";
+import { AuthProvider } from "./context/AuthContext";
 function App() {
   return (
-    <BrowserRouter>
-      <RouteScrollToTop />
-      <PhosphorIconInit />
+    <AuthProvider>
+      <BrowserRouter>
+        <RouteScrollToTop />
+        <PhosphorIconInit />
 
-      <Routes>
-        <Route exact path='/' element={<HomePageOne />} />
-        <Route exact path='/index-two' element={<HomePageTwo />} />
-        <Route exact path='/index-three' element={<HomePageThree />} />
-        <Route exact path='/shop' element={<ShopPage />} />
-        <Route
-          exact
-          path='/product-details'
-          element={<ProductDetailsPageOne />}
-        />
-        <Route
-          exact
-          path='/product-details-two'
-          element={<ProductDetailsPageTwo />}
-        />
-        <Route exact path='/cart' element={<CartPage />} />
-        <Route exact path='/checkout' element={<CheckoutPage />} />
-        <Route exact path='/become-seller' element={<BecomeSellerPage />} />
-        <Route exact path='/wishlist' element={<WishlistPage />} />
-        <Route exact path='/account' element={<AccountPage />} />
-        <Route exact path='/blog' element={<BlogPage />} />
-        <Route exact path='/blog-details' element={<BlogDetailsPage />} />
-        <Route exact path='/contact' element={<ContactPage />} />
-        <Route exact path='/vendor' element={<VendorPage />} />
-        <Route exact path='/vendor-details' element={<VendorDetailsPage />} />
-        <Route exact path='/vendor-two' element={<VendorTwoPage />} />
-        <Route
-          exact
-          path='/vendor-two-details'
-          element={<VendorTwoDetailsPage />}
-        />
-      </Routes>
-    </BrowserRouter>
+        <Routes>
+          <Route exact path='/' element={<HomePageOne />} />
+          <Route exact path='/index-two' element={<HomePageTwo />} />
+          <Route exact path='/index-three' element={<HomePageThree />} />
+          <Route exact path='/shop' element={<ShopPage />} />
+          <Route exact path='/product-details' element={<ProductDetailsPageOne />} />
+          <Route exact path='/product-details/:id' element={<ProductDetailsPageOne />} />
+          <Route exact path='/product-details-two' element={<ProductDetailsPageTwo />} />
+          <Route exact path='/cart' element={<CartPage />} />
+          <Route exact path='/checkout' element={<CheckoutPage />} />
+          <Route exact path='/become-seller' element={<BecomeSellerPage />} />
+          <Route exact path='/wishlist' element={<WishlistPage />} />
+          <Route exact path='/account' element={<AccountPage />} />
+          <Route exact path='/blog' element={<BlogPage />} />
+          <Route exact path='/blog-details' element={<BlogDetailsPage />} />
+          <Route exact path='/contact' element={<ContactPage />} />
+          <Route exact path='/vendor' element={<VendorPage />} />
+          <Route exact path='/vendor-details' element={<VendorDetailsPage />} />
+          <Route exact path='/vendor-two' element={<VendorTwoPage />} />
+          <Route exact path='/vendor-two-details' element={<VendorTwoDetailsPage />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

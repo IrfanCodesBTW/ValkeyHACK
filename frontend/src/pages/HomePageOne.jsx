@@ -22,6 +22,7 @@ import FooterOne from "../components/FooterOne";
 import BottomFooter from "../components/BottomFooter";
 import ScrollToTop from "react-scroll-to-top";
 import ColorInit from "../helper/ColorInit";
+import ValkeyHomeSections from "../components/ValkeyHomeSections";
 const HomePageOne = () => {
 
   return (
@@ -45,6 +46,8 @@ const HomePageOne = () => {
 
       {/* FeatureOne */}
       <FeatureOne />
+
+      <ValkeyHomeSections />
 
       {/* PromotionalOne */}
       <PromotionalOne />

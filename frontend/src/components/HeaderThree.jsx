@@ -14,10 +14,12 @@ const HeaderThree = () => {
       return () => (window.onscroll = null);
     };
     const selectElement = query(".js-example-basic-single");
-    selectElement.select2();
+    if (selectElement && typeof selectElement.select2 === "function") {
+      selectElement.select2();
+    }
 
     return () => {
-      if (selectElement.data("select2")) {
+      if (selectElement && typeof selectElement.data === "function" && selectElement.data("select2")) {
         selectElement.select2("destroy");
       }
     };
