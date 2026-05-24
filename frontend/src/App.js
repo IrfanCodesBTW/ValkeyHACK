@@ -20,10 +20,11 @@ import VendorTwoDetailsPage from "./pages/VendorTwoDetailsPage";
 import BecomeSellerPage from "./pages/BecomeSellerPage";
 import WishlistPage from "./pages/WishlistPage";
 import { AuthProvider } from "./context/AuthContext";
+import NotFoundPage from "./pages/NotFoundPage";
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <RouteScrollToTop />
         <PhosphorIconInit />
 
@@ -47,6 +48,7 @@ function App() {
           <Route exact path='/vendor-details' element={<VendorDetailsPage />} />
           <Route exact path='/vendor-two' element={<VendorTwoPage />} />
           <Route exact path='/vendor-two-details' element={<VendorTwoDetailsPage />} />
+          <Route path='*' element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

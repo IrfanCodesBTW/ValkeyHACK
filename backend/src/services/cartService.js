@@ -1,4 +1,6 @@
 const { badRequest, notFound } = require("../lib/errors");
+const config = require("../config");
+const { availableStock, enrichProduct } = require("./productPresenter");
 
 class CartService {
   constructor(store, repos) {
@@ -11,10 +13,13 @@ class CartService {
   }
 
   async available(productId) {
-    const inventory = await this.store.hGetAll(`inventory:${productId}`);
-    const quantity = Number(inventory.quantity || 0);
-    const reserved = Number(inventory.reserved || 0);
-    return Math.max(0, quantity - reserved);
+    return availableStock(this.store, { id: productId });
+  }
+
+  async refreshTtl(userId) {
+    await this.store.expire(this.key(userId), config.cart.ttlSeconds);
+    const couponCode = await this.store.get(`cart_coupon:${userId}`);
+    if (couponCode) await this.store.expire(`cart_coupon:${userId}`, config.cart.ttlSeconds);
   }
 
   async ensureProduct(productId) {
@@ -25,18 +30,27 @@ class CartService {
 
   async addItem(userId, productId, quantity) {
     await this.ensureProduct(productId);
+    const raw = await this.store.hGetAll(this.key(userId));
+    const nextQuantity = Number(raw[productId] || 0) + quantity;
     const available = await this.available(productId);
-    if (quantity > available) throw badRequest("INSUFFICIENT_STOCK", "Requested quantity exceeds available stock", { available });
-    await this.store.hSet(this.key(userId), productId, String(quantity));
+    if (nextQuantity > available) throw badRequest("INSUFFICIENT_STOCK", "Requested quantity exceeds available stock", { available });
+    await this.store.hSet(this.key(userId), productId, String(nextQuantity));
+    await this.refreshTtl(userId);
     return this.getCart(userId);
   }
 
   async updateItem(userId, productId, quantity) {
-    return this.addItem(userId, productId, quantity);
+    await this.ensureProduct(productId);
+    const available = await this.available(productId);
+    if (quantity > available) throw badRequest("INSUFFICIENT_STOCK", "Requested quantity exceeds available stock", { available });
+    await this.store.hSet(this.key(userId), productId, String(quantity));
+    await this.refreshTtl(userId);
+    return this.getCart(userId);
   }
 
   async removeItem(userId, productId) {
     await this.store.hDel(this.key(userId), productId);
+    await this.refreshTtl(userId);
     return this.getCart(userId);
   }
 
@@ -50,6 +64,8 @@ class CartService {
     if (!coupon) throw badRequest("COUPON_NOT_FOUND", "Coupon does not exist");
     this.validateCoupon(coupon, cart.subtotal);
     await this.store.set(`cart_coupon:${userId}`, code);
+    await this.store.expire(`cart_coupon:${userId}`, config.cart.ttlSeconds);
+    await this.refreshTtl(userId);
     return this.getCart(userId);
   }
 
@@ -84,8 +100,9 @@ class CartService {
       const product = await this.repos.products.get(productId);
       if (!product) continue;
       const quantity = Number(quantityText);
+      const enrichedProduct = await enrichProduct(this.store, product);
       items.push({
-        product,
+        product: enrichedProduct,
         productId,
         quantity,
         unitPrice: product.price,

@@ -1,52 +1,17 @@
 import React from "react";
-import Preloader from "../helper/Preloader";
-
-import HeaderTwo from "../components/HeaderTwo";
-import Breadcrumb from "../components/Breadcrumb";
-import FooterTwo from "../components/FooterTwo";
-import BottomFooter from "../components/BottomFooter";
-import ShippingOne from "../components/ShippingOne";
+import DemoLayout from "../components/demo/DemoLayout";
+import { PageHeader } from "../components/demo/DemoUi";
 import Account from "../components/Account";
-import ScrollToTop from "react-scroll-to-top";
-import ColorInit from "../helper/ColorInit";
 
-
-const AccountPage = () => {
-
-
-
-  return (
-    <>
-      {/* ColorInit */}
-      <ColorInit color={true} />
-
-      {/* ScrollToTop */}
-      <ScrollToTop smooth color="#FA6400" />
-
-      {/* Preloader */}
-      <Preloader />
-
-      {/* HeaderTwo */}
-      <HeaderTwo category={true} />
-
-      {/* Breadcrumb */}
-      <Breadcrumb title={"Account"} />
-
-      {/* Account */}
-      <Account />
-
-      {/* ShippingOne */}
-      <ShippingOne />
-
-      {/* FooterTwo */}
-      <FooterTwo />
-
-      {/* BottomFooter */}
-      <BottomFooter />
-
-
-    </>
-  );
-};
+const AccountPage = () => (
+  <DemoLayout>
+    <div className="demo-shell">
+      <PageHeader eyebrow="Account" title="Sign in for cart and checkout">
+        Use the demo shopper or create a fresh customer account.
+      </PageHeader>
+    </div>
+    <Account />
+  </DemoLayout>
+);
 
 export default AccountPage;

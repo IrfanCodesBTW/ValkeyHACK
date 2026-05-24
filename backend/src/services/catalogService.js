@@ -1,4 +1,5 @@
 const { notFound } = require("../lib/errors");
+const { enrichProduct, enrichProducts } = require("./productPresenter");
 
 function sortProducts(items, sort = "newest") {
   const copy = [...items];
@@ -14,7 +15,8 @@ function sortProducts(items, sort = "newest") {
 }
 
 class CatalogService {
-  constructor(repos) {
+  constructor(store, repos) {
+    this.store = store;
     this.repos = repos;
   }
 
@@ -32,13 +34,13 @@ class CatalogService {
     products = sortProducts(products, query.sort);
     const total = products.length;
     const start = (page - 1) * pageSize;
-    return { total, page, pageSize, results: products.slice(start, start + pageSize) };
+    return { total, page, pageSize, results: await enrichProducts(this.store, products.slice(start, start + pageSize)) };
   }
 
   async get(id) {
     const product = await this.repos.products.get(id);
     if (!product) throw notFound("Product");
-    return product;
+    return enrichProduct(this.store, product);
   }
 
   async categories() {

@@ -19,40 +19,65 @@ class CheckoutService {
     const idempotencyStoreKey = `idempotency:${userId}:${idempotencyKey}`;
     const existing = await this.store.get(idempotencyStoreKey);
     if (existing) return { order: JSON.parse(existing), duplicate: true };
+    const lockKey = `${idempotencyStoreKey}:lock`;
+    const lock = await this.store.set(lockKey, "1", { NX: true, EX: 30 });
+    if (!lock) throw conflict("CHECKOUT_IN_PROGRESS", "Checkout is already being processed for this idempotency key");
 
-    const cart = await this.cartService.getCart(userId);
-    if (!cart.items.length) throw badRequest("EMPTY_CART", "Cart is empty");
+    let reserved = false;
+    let order = null;
+    let couponIncremented = false;
 
-    await this.reserveInventory(cart.items);
+    try {
+      const cart = await this.cartService.getCart(userId);
+      if (!cart.items.length) throw badRequest("EMPTY_CART", "Cart is empty");
 
-    const order = {
-      id: createId("order"),
-      userId,
-      items: cart.items.map((item) => ({
-        productId: item.productId,
-        name: item.product.name,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        subtotal: item.subtotal
-      })),
-      subtotal: cart.subtotal,
-      discount: cart.discount,
-      total: cart.total,
-      coupon: cart.coupon,
-      shippingAddress,
-      status: "confirmed",
-      createdAt: new Date().toISOString()
-    };
+      await this.reserveInventory(cart.items);
+      reserved = true;
 
-    await this.repos.orders.save(order.id, order);
-    await this.store.zAdd(`orders:user:${userId}`, { score: Date.now(), value: order.id });
-    await this.store.setEx(idempotencyStoreKey, 86400, JSON.stringify(order));
-    for (const item of cart.items) {
-      await this.trendingService.track("purchase", item.productId, item.quantity);
-      await this.recommendationService.track(userId, "purchase", item.productId, item.quantity);
+      order = {
+        id: createId("order"),
+        userId,
+        items: cart.items.map((item) => ({
+          productId: item.productId,
+          name: item.product.name,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          subtotal: item.subtotal
+        })),
+        subtotal: cart.subtotal,
+        discount: cart.discount,
+        total: cart.total,
+        coupon: cart.coupon,
+        shippingAddress,
+        status: "confirmed",
+        createdAt: new Date().toISOString()
+      };
+
+      await this.repos.orders.save(order.id, order);
+      await this.store.zAdd(`orders:user:${userId}`, { score: Date.now(), value: order.id });
+      if (cart.coupon?.code) {
+        await this.incrementCouponUsage(cart.coupon.code);
+        couponIncremented = true;
+      }
+      for (const item of cart.items) {
+        await this.trendingService.track("purchase", item.productId, item.quantity);
+        await this.recommendationService.track(userId, "purchase", item.productId, item.quantity);
+      }
+      await this.store.setEx(idempotencyStoreKey, 86400, JSON.stringify(order));
+      await this.cartService.clear(userId);
+      reserved = false;
+      return { order, duplicate: false };
+    } catch (error) {
+      if (reserved && order?.items?.length) {
+        await this.restoreInventory(order.items);
+        await this.repos.orders.delete(order.id);
+        if (typeof this.store.zRem === "function") await this.store.zRem(`orders:user:${userId}`, order.id);
+        if (couponIncremented && order.coupon?.code) await this.incrementCouponUsage(order.coupon.code, -1);
+      }
+      throw error;
+    } finally {
+      await this.store.del(lockKey);
     }
-    await this.cartService.clear(userId);
-    return { order, duplicate: false };
   }
 
   async listOrders(userId) {
@@ -86,6 +111,23 @@ class CheckoutService {
         reserved: String(Number(inventory.reserved || 0))
       });
     }
+  }
+
+  async restoreInventory(items) {
+    for (const item of items) {
+      const inventory = await this.store.hGetAll(`inventory:${item.productId}`);
+      await this.store.hSet(`inventory:${item.productId}`, {
+        quantity: String(Number(inventory.quantity || 0) + item.quantity),
+        reserved: String(Number(inventory.reserved || 0))
+      });
+    }
+  }
+
+  async incrementCouponUsage(code, delta = 1) {
+    const coupon = await this.repos.coupons.get(`coupon:${code}`);
+    if (!coupon) return;
+    coupon.usedCount = Math.max(0, Number(coupon.usedCount || 0) + delta);
+    await this.repos.coupons.save(coupon.code, coupon);
   }
 
   async getOrder(userId, orderId) {

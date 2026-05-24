@@ -1,3 +1,5 @@
+const { enrichProduct } = require("./productPresenter");
+
 class RecommendationService {
   constructor(store, repos) {
     this.store = store;
@@ -29,15 +31,18 @@ class RecommendationService {
       score: (categories.includes(product.categoryId) ? 20 : 0) + product.rating * 2 + Math.max(0, 100000 - product.price) / 100000
     }));
     const sorted = scored.sort((a, b) => b.score - a.score).slice(0, Math.min(Number(limit) || 8, 24));
-    return {
-      source: "deterministic",
-      results: sorted.map(({ product, score }) => ({
-        ...product,
+    const enriched = await Promise.all(
+      sorted.map(async ({ product, score }) => ({
+        ...(await enrichProduct(this.store, product)),
         recommendationScore: Number(score.toFixed(2)),
         rationale: categories.includes(product.categoryId)
           ? "Matches your recent category interest."
           : "Popular highly rated product from the demo catalog."
       }))
+    );
+    return {
+      source: "deterministic",
+      results: enriched
     };
   }
 }

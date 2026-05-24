@@ -3,7 +3,7 @@ class MemoryStore {
     this.kind = "memory";
     this.values = new Map();
     this.expires = new Map();
-    this.capabilities = { json: false, search: false };
+    this.capabilities = { json: false, search: false, searchModule: false };
   }
 
   async connect() {}
@@ -28,7 +28,7 @@ class MemoryStore {
   }
 
   async health() {
-    return { connected: true, json: false, search: false, memory: true };
+    return { connected: true, json: false, search: false, searchModule: false, memory: true };
   }
 
   async get(key) {
@@ -37,6 +37,7 @@ class MemoryStore {
   }
 
   async set(key, value, options = {}) {
+    if (options.NX && this._get(key) !== undefined) return null;
     this.values.set(key, String(value));
     if (options.EX) this.expires.set(key, Date.now() + Number(options.EX) * 1000);
     return "OK";
@@ -149,6 +150,12 @@ class MemoryStore {
     return Array.from(zset.entries())
       .filter(([, score]) => score >= Number(min) && score <= Number(max))
       .map(([value]) => value);
+  }
+
+  async zRem(key, member) {
+    const zset = this._get(key);
+    if (!(zset instanceof Map)) return 0;
+    return zset.delete(member) ? 1 : 0;
   }
 
   async sendCommand(args) {

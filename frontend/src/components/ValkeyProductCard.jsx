@@ -1,53 +1,66 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { api, formatPrice } from "../api/client";
+import { useAuth } from "../context/AuthContext";
 
 const ValkeyProductCard = ({ product, onCartChange }) => {
+  const auth = useAuth();
+  const navigate = useNavigate();
+  const [pending, setPending] = useState(false);
+  const [message, setMessage] = useState("");
+  const stock = Number(product.availableStock ?? product.inventory?.quantity ?? 0);
+  const outOfStock = stock <= 0;
+
   const addToCart = async (event) => {
     event.preventDefault();
-    await api.addCartItem({ productId: product.id, quantity: 1 });
-    if (onCartChange) onCartChange();
+    setMessage("");
+    if (!auth.user) {
+      navigate("/account");
+      return;
+    }
+    setPending(true);
+    try {
+      await api.addCartItem({ productId: product.id, quantity: 1 });
+      setMessage("Added");
+      if (onCartChange) onCartChange();
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setPending(false);
+    }
   };
 
   return (
-    <div className="product-card h-100 p-16 border border-gray-100 hover-border-main-600 rounded-8 position-relative transition-2">
-      <button
-        type="button"
-        onClick={addToCart}
-        className="product-card__cart btn bg-main-50 text-main-600 hover-bg-main-600 hover-text-white py-8 px-12 rounded-8 flex-align gap-8 position-absolute inset-block-start-0 inset-inline-end-0 me-12 mt-12"
-      >
-        <i className="ph ph-shopping-cart" /> Add
-      </button>
-      <Link to={`/product-details/${encodeURIComponent(product.id)}`} className="product-card__thumb flex-center bg-gray-50 rounded-8 p-16">
-        <img src={product.image} alt={product.name} />
+    <article className="demo-product-card">
+      <Link to={`/product-details/${encodeURIComponent(product.id)}`} className="demo-product-card__image">
+        <img src={product.image} alt={product.name} loading="lazy" />
       </Link>
-      <div className="product-card__content mt-16">
-        <div className="flex-align gap-6">
-          <span className="text-xs fw-bold text-gray-600">{product.rating}</span>
-          <span className="text-15 fw-bold text-warning-600 d-flex">
-            <i className="ph-fill ph-star" />
-          </span>
-          <span className="text-xs fw-bold text-gray-600">({product.reviewCount})</span>
+      <div className="demo-product-card__body">
+        <div className="demo-product-card__meta">
+          <strong>{product.brand}</strong> - {product.rating} <i className="ph-fill ph-star" aria-hidden="true" /> - {product.reviewCount} reviews
         </div>
-        <h6 className="title text-md fw-semibold mt-12 mb-8">
-          <Link to={`/product-details/${encodeURIComponent(product.id)}`} className="link text-line-2">
-            {product.name}
+        <h3>
+          <Link to={`/product-details/${encodeURIComponent(product.id)}`}>{product.name}</Link>
+        </h3>
+        <div className="demo-product-card__stock">
+          {outOfStock ? "Out of stock" : `${stock} available`} {product.recommendationScore ? `- Score ${product.recommendationScore}` : ""}
+        </div>
+        <div className="demo-product-card__price">
+          <strong>{formatPrice(product.price)}</strong>
+          <span>{formatPrice(product.compareAtPrice)}</span>
+        </div>
+        {message && <div className={`demo-product-card__stock ${message === "Added" ? "text-main-600" : "text-danger-600"}`}>{message}</div>}
+        <div className="demo-product-card__actions">
+          <button className="demo-button" type="button" onClick={addToCart} disabled={pending || outOfStock}>
+            <i className="ph ph-shopping-cart" aria-hidden="true" />
+            {pending ? "Adding" : "Add"}
+          </button>
+          <Link className="demo-button demo-button--secondary" to={`/product-details/${encodeURIComponent(product.id)}`}>
+            View
           </Link>
-        </h6>
-        <div className="flex-align gap-4 mb-8">
-          <span className="text-main-600 text-md d-flex">
-            <i className="ph-fill ph-storefront" />
-          </span>
-          <span className="text-gray-500 text-xs">{product.brand}</span>
-        </div>
-        <div className="product-card__price">
-          <span className="text-gray-400 text-sm fw-semibold text-decoration-line-through me-8">
-            {formatPrice(product.compareAtPrice)}
-          </span>
-          <span className="text-heading text-md fw-semibold">{formatPrice(product.price)}</span>
         </div>
       </div>
-    </div>
+    </article>
   );
 };
 

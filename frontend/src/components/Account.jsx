@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { Alert, Field } from "./demo/DemoUi";
 
 const Account = () => {
   const auth = useAuth();
@@ -8,78 +9,136 @@ const Account = () => {
   const [login, setLogin] = useState({ email: "demo@valkey.local", password: "ValkeyDemo123" });
   const [register, setRegister] = useState({ firstName: "", lastName: "", email: "", password: "" });
   const [message, setMessage] = useState("");
+  const [pending, setPending] = useState("");
 
   const submitLogin = async (event) => {
     event.preventDefault();
     setMessage("");
+    setPending("login");
     try {
       await auth.login(login.email, login.password);
       navigate("/shop");
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setPending("");
     }
   };
 
   const submitRegister = async (event) => {
     event.preventDefault();
     setMessage("");
+    setPending("register");
     try {
       await auth.register(register);
       await auth.login(register.email, register.password);
       navigate("/shop");
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setPending("");
     }
   };
 
   return (
-    <section className="account py-80">
-      <div className="container container-lg">
+    <section className="demo-section">
+      <div className="demo-shell">
         {auth.user && (
-          <div className="border border-gray-100 rounded-8 p-24 mb-24 flex-between gap-16 flex-wrap">
+          <div className="demo-account-banner">
             <div>
-              <h6 className="mb-4">Signed in as {auth.user.firstName} {auth.user.lastName}</h6>
-              <span className="text-gray-500">{auth.user.email}</span>
+              <strong>
+                {auth.user.firstName} {auth.user.lastName}
+              </strong>
+              <div className="demo-muted">{auth.user.email}</div>
             </div>
-            <button type="button" className="btn btn-outline-main" onClick={auth.logout}>Logout</button>
+            <div className="d-flex gap-8 flex-wrap">
+              <Link className="demo-button demo-button--secondary" to="/shop">
+                Continue shopping
+              </Link>
+              <button type="button" className="demo-button" onClick={auth.logout}>
+                Logout
+              </button>
+            </div>
           </div>
         )}
-        {message && <div className="alert alert-danger">{message}</div>}
-        <div className="row gy-4">
-          <div className="col-xl-6 pe-xl-5">
-            <form onSubmit={submitLogin} className="border border-gray-100 hover-border-main-600 transition-1 rounded-8 px-24 py-40 h-100">
-              <h6 className="text-xl mb-32">Login</h6>
-              <div className="mb-24">
-                <label className="text-neutral-900 text-lg mb-8 fw-medium" htmlFor="login-email">Email address</label>
-                <input id="login-email" type="email" className="common-input" value={login.email} onChange={(e) => setLogin({ ...login, email: e.target.value })} />
-              </div>
-              <div className="mb-24">
-                <label className="text-neutral-900 text-lg mb-8 fw-medium" htmlFor="login-password">Password</label>
-                <input id="login-password" type="password" className="common-input" value={login.password} onChange={(e) => setLogin({ ...login, password: e.target.value })} />
-              </div>
-              <button type="submit" className="btn btn-main py-18 px-40">Log in</button>
-            </form>
-          </div>
-          <div className="col-xl-6">
-            <form onSubmit={submitRegister} className="border border-gray-100 hover-border-main-600 transition-1 rounded-8 px-24 py-40">
-              <h6 className="text-xl mb-32">Register</h6>
-              <div className="row gy-3">
-                <div className="col-sm-6">
-                  <input className="common-input" placeholder="First name" value={register.firstName} onChange={(e) => setRegister({ ...register, firstName: e.target.value })} />
-                </div>
-                <div className="col-sm-6">
-                  <input className="common-input" placeholder="Last name" value={register.lastName} onChange={(e) => setRegister({ ...register, lastName: e.target.value })} />
-                </div>
-                <div className="col-12">
-                  <input type="email" className="common-input" placeholder="Email address" value={register.email} onChange={(e) => setRegister({ ...register, email: e.target.value })} />
-                </div>
-                <div className="col-12">
-                  <input type="password" className="common-input" placeholder="Password, 8+ characters" value={register.password} onChange={(e) => setRegister({ ...register, password: e.target.value })} />
-                </div>
-              </div>
-              <button type="submit" className="btn btn-main py-18 px-40 mt-32">Register</button>
-            </form>
-          </div>
+        {message && <Alert type="danger">{message}</Alert>}
+        <div className="demo-auth-layout">
+          <form className="demo-auth-card" onSubmit={submitLogin}>
+            <h2>Login</h2>
+            <Field id="login-email" label="Email address">
+              <input
+                id="login-email"
+                type="email"
+                autoComplete="email"
+                value={login.email}
+                onChange={(event) => setLogin((value) => ({ ...value, email: event.target.value }))}
+                required
+              />
+            </Field>
+            <Field id="login-password" label="Password">
+              <input
+                id="login-password"
+                type="password"
+                autoComplete="current-password"
+                value={login.password}
+                onChange={(event) => setLogin((value) => ({ ...value, password: event.target.value }))}
+                required
+              />
+            </Field>
+            <button className="demo-button" type="submit" disabled={pending === "login"}>
+              <i className="ph ph-sign-in" aria-hidden="true" />
+              {pending === "login" ? "Logging in" : "Log in"}
+            </button>
+          </form>
+
+          <form className="demo-auth-card" onSubmit={submitRegister}>
+            <h2>Register</h2>
+            <div className="demo-form-grid">
+              <Field id="register-first-name" label="First name">
+                <input
+                  id="register-first-name"
+                  autoComplete="given-name"
+                  value={register.firstName}
+                  onChange={(event) => setRegister((value) => ({ ...value, firstName: event.target.value }))}
+                  required
+                />
+              </Field>
+              <Field id="register-last-name" label="Last name">
+                <input
+                  id="register-last-name"
+                  autoComplete="family-name"
+                  value={register.lastName}
+                  onChange={(event) => setRegister((value) => ({ ...value, lastName: event.target.value }))}
+                  required
+                />
+              </Field>
+              <Field id="register-email" label="Email address">
+                <input
+                  id="register-email"
+                  type="email"
+                  autoComplete="email"
+                  value={register.email}
+                  onChange={(event) => setRegister((value) => ({ ...value, email: event.target.value }))}
+                  required
+                />
+              </Field>
+              <Field id="register-password" label="Password">
+                <input
+                  id="register-password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={register.password}
+                  minLength={8}
+                  onChange={(event) => setRegister((value) => ({ ...value, password: event.target.value }))}
+                  required
+                />
+              </Field>
+            </div>
+            <button className="demo-button mt-24" type="submit" disabled={pending === "register"}>
+              <i className="ph ph-user-plus" aria-hidden="true" />
+              {pending === "register" ? "Creating account" : "Create account"}
+            </button>
+          </form>
         </div>
       </div>
     </section>

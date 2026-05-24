@@ -23,7 +23,7 @@ const productSeed = [
   ["Galaxy S25 256GB", "Samsung", "category:phones", 79999, 4.7, ["phone", "android", "camera"], "Flagship Android phone with excellent cameras"],
   ["iPhone 16 128GB", "Apple", "category:phones", 82999, 4.8, ["phone", "ios", "camera"], "Fast iPhone with strong video and app performance"],
   ["OnePlus 13R 5G", "OnePlus", "category:phones", 42999, 4.5, ["phone", "5g", "value"], "Performance Android phone with fast charging"],
-  ["Nothing Phone 3a Pro", "Nothing", "category:phones", 31999, 4.3, ["phone", "camera", "design"], "Distinctive design with clean Android experience"],
+  ["Nothing Phone 3a Pro", "Nothing", "category:phones", 29999, 4.3, ["phone", "camera", "design"], "Distinctive design with clean Android experience"],
   ["Sony WH-1000XM5 Headphones", "Sony", "category:audio", 29999, 4.8, ["audio", "headphones", "noise-cancelling"], "Premium wireless noise cancelling headphones"],
   ["boAt Airdopes ProGear", "boAt", "category:audio", 2499, 4.1, ["audio", "earbuds", "budget"], "Affordable earbuds with low latency mode"],
   ["JBL Flip 6 Bluetooth Speaker", "JBL", "category:audio", 8999, 4.5, ["audio", "speaker", "portable"], "Rugged portable speaker with punchy sound"],

@@ -1,73 +1,141 @@
 import React, { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, formatPrice } from "../api/client";
+import { useAuth } from "../context/AuthContext";
+import { Alert, EmptyState, SkeletonGrid } from "./demo/DemoUi";
 
 const ProductDetailsOne = () => {
   const { id } = useParams();
+  const auth = useAuth();
+  const navigate = useNavigate();
   const productId = id ? decodeURIComponent(id) : "product:001";
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [pending, setPending] = useState(false);
 
   useEffect(() => {
+    let alive = true;
     setMessage("");
-    api.product(productId).then((data) => {
-      setProduct(data);
-      api.trackView(data.id).catch(() => {});
-    }).catch((error) => setMessage(error.message));
+    setLoading(true);
+    api
+      .product(productId)
+      .then((data) => {
+        if (!alive) return;
+        setProduct(data);
+        setQuantity(1);
+        api.trackView(data.id).catch(() => {});
+      })
+      .catch((error) => {
+        if (alive) setMessage(error.message);
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
   }, [productId]);
+
+  const stock = Number(product?.availableStock ?? product?.inventory?.quantity ?? 0);
 
   const addToCart = async () => {
     setMessage("");
+    if (!auth.user) {
+      navigate("/account");
+      return;
+    }
+    setPending(true);
     try {
       await api.addCartItem({ productId, quantity });
       setMessage("Added to cart.");
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setPending(false);
     }
   };
 
+  if (loading) {
+    return (
+      <section className="demo-section">
+        <div className="demo-shell">
+          <SkeletonGrid count={2} />
+        </div>
+      </section>
+    );
+  }
+
   if (!product) {
-    return <section className="product-details py-80"><div className="container container-lg">{message || "Loading product..."}</div></section>;
+    return (
+      <section className="demo-section">
+        <div className="demo-shell">
+          <EmptyState
+            icon="ph-warning-circle"
+            title="Product not found"
+            action={
+              <Link className="demo-button" to="/shop">
+                Back to catalog
+              </Link>
+            }
+          >
+            {message || "The product could not be loaded."}
+          </EmptyState>
+        </div>
+      </section>
+    );
   }
 
   return (
-    <section className="product-details py-80">
-      <div className="container container-lg">
-        {message && <div className="alert alert-info">{message}</div>}
-        <div className="row gy-4">
-          <div className="col-lg-6">
-            <div className="product-details__thumb-slider border border-gray-100 rounded-8 p-24 bg-gray-50">
-              <div className="product-details__thumb flex-center">
-                <img src={product.image} alt={product.name} />
-              </div>
-            </div>
+    <section className="demo-section">
+      <div className="demo-shell">
+        {message && <Alert type={message === "Added to cart." ? "success" : "warning"}>{message}</Alert>}
+        <div className="demo-detail-layout">
+          <div className="demo-detail-media">
+            <img src={product.image} alt={product.name} />
           </div>
-          <div className="col-lg-6">
-            <h4 className="mb-12">{product.name}</h4>
-            <div className="flex-align gap-12 mb-24">
-              <span className="text-warning-600"><i className="ph-fill ph-star" /> {product.rating}</span>
-              <span className="text-gray-500">({product.reviewCount} reviews)</span>
-              <span className="text-gray-500">SKU: {product.sku}</span>
+          <div className="demo-detail-info">
+            <span className="demo-eyebrow">
+              <i className="ph ph-storefront" aria-hidden="true" />
+              {product.brand}
+            </span>
+            <h1>{product.name}</h1>
+            <div className="demo-muted">
+              SKU {product.sku} - {product.rating} <i className="ph-fill ph-star" aria-hidden="true" /> - {product.reviewCount} reviews
             </div>
-            <p className="text-gray-700">{product.description}</p>
-            <div className="mt-32 flex-align gap-12">
-              <h4 className="mb-0">{formatPrice(product.price)}</h4>
-              <span className="text-gray-500 text-decoration-line-through">{formatPrice(product.compareAtPrice)}</span>
+            <p className="mt-24">{product.description}</p>
+            <div className="demo-detail-price">
+              <strong>{formatPrice(product.price)}</strong>
+              <span>{formatPrice(product.compareAtPrice)}</span>
             </div>
-            <div className="mt-32 flex-align gap-16">
-              <div className="border border-gray-100 rounded-pill py-9 px-16 flex-align">
-                <button onClick={() => setQuantity(Math.max(1, quantity - 1))} type="button" className="quantity__minus p-4 flex-center"><i className="ph ph-minus" /></button>
-                <input type="number" className="quantity__input border-0 text-center w-32" value={quantity} readOnly />
-                <button onClick={() => setQuantity(quantity + 1)} type="button" className="quantity__plus p-4 flex-center"><i className="ph ph-plus" /></button>
+            <div className={stock > 0 ? "demo-alert demo-alert--success" : "demo-alert demo-alert--warning"}>
+              {stock > 0 ? `${stock} units available for checkout` : "Out of stock"}
+            </div>
+            <div className="d-flex gap-12 flex-wrap align-items-center">
+              <div className="demo-qty" aria-label="Quantity">
+                <button type="button" aria-label="Decrease quantity" disabled={quantity <= 1} onClick={() => setQuantity((value) => Math.max(1, value - 1))}>
+                  <i className="ph ph-minus" />
+                </button>
+                <input readOnly value={quantity} aria-label="Selected quantity" />
+                <button type="button" aria-label="Increase quantity" disabled={quantity >= stock} onClick={() => setQuantity((value) => Math.min(stock, value + 1))}>
+                  <i className="ph ph-plus" />
+                </button>
               </div>
-              <button onClick={addToCart} type="button" className="btn btn-main rounded-pill flex-align gap-8 px-48">
-                <i className="ph ph-shopping-cart" /> Add To Cart
+              <button className="demo-button" type="button" onClick={addToCart} disabled={pending || stock <= 0}>
+                <i className="ph ph-shopping-cart" aria-hidden="true" />
+                {pending ? "Adding" : "Add to cart"}
               </button>
-              <Link to="/cart" className="btn btn-outline-main rounded-pill">Cart</Link>
+              <Link to="/cart" className="demo-button demo-button--secondary">
+                View cart
+              </Link>
             </div>
-            <div className="mt-32">
-              {(product.tags || []).map((tag) => <span className="badge bg-main-50 text-main-600 me-8" key={tag}>{tag}</span>)}
+            <div className="demo-tags">
+              {(product.tags || []).map((tag) => (
+                <span className="demo-badge" key={tag}>
+                  {tag}
+                </span>
+              ))}
             </div>
           </div>
         </div>

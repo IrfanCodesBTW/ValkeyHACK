@@ -40,6 +40,7 @@ function routes(context) {
       status: "ok",
       valkey: health.connected ? "connected" : "disconnected",
       search: health.search ? "available" : "unavailable",
+      searchModule: health.searchModule ? "available" : "unavailable",
       json: health.json ? "available" : "unavailable",
       memoryStore: health.memory
     });
@@ -47,7 +48,7 @@ function routes(context) {
 
   router.use(attachAuth(context));
 
-  router.post("/auth/register", validate(schemas.registerBody), async (req, res, next) => {
+  router.post("/auth/register", validate(schemas.registerBody), authLoginLimiter, async (req, res, next) => {
     try {
       const user = await services.auth.register(req.body);
       res.status(201).json({ user });

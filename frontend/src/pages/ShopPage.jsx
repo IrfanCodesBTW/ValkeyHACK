@@ -1,44 +1,17 @@
 import React from "react";
-import Preloader from "../helper/Preloader";
-import HeaderTwo from "../components/HeaderTwo";
-import Breadcrumb from "../components/Breadcrumb";
+import DemoLayout from "../components/demo/DemoLayout";
+import { PageHeader } from "../components/demo/DemoUi";
 import ShopSection from "../components/ShopSection";
-import ShippingTwo from "../components/ShippingTwo";
-import FooterTwo from "../components/FooterTwo";
-import ColorInit from "../helper/ColorInit";
-import ScrollToTop from "react-scroll-to-top";
 
-const ShopPage = () => {
-
-  return (
-    <>
-      {/* ColorInit */}
-      <ColorInit color={true} />
-
-      {/* ScrollToTop */}
-      <ScrollToTop smooth color="#FA6400" />
-
-      {/* Preloader */}
-      <Preloader />
-
-      {/* HeaderOne */}
-      <HeaderTwo category={true} />
-
-      {/* Breadcrumb */}
-      <Breadcrumb title={"Shop"} />
-
-      {/* ShopSection */}
-      <ShopSection />
-
-      {/* ShippingTwo */}
-      <ShippingTwo />
-
-      {/* FooterTwo */}
-      <FooterTwo />
-
-
-    </>
-  );
-};
+const ShopPage = () => (
+  <DemoLayout>
+    <div className="demo-shell">
+      <PageHeader eyebrow="Catalog" title="Shop the live Valkey catalog">
+        Compare products by category, budget, rating, and shopper intent.
+      </PageHeader>
+    </div>
+    <ShopSection />
+  </DemoLayout>
+);
 
 export default ShopPage;

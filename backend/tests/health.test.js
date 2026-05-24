@@ -20,6 +20,7 @@ describe("health", () => {
     expect(response.body.status).toBe("ok");
     expect(response.body.valkey).toBe("connected");
     expect(response.body.search).toBe("unavailable");
+    expect(response.body.searchModule).toBe("unavailable");
     expect(response.body.json).toBe("unavailable");
     expect(response.body.memoryStore).toBe(true);
   });

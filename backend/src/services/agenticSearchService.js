@@ -25,14 +25,14 @@ class AgenticSearchService {
     };
 
     for (const entry of categorySynonyms) {
-      if (entry.words.some((word) => lower.includes(word))) {
+      if (entry.words.some((word) => matchesTerm(lower, word))) {
         plan.categoryFilter = entry.categoryId;
         break;
       }
     }
 
-    const under = lower.match(/\b(?:under|below|less than)\s*(?:rs\.?|inr|₹)?\s*([0-9,]+)/);
-    const between = lower.match(/\bbetween\s*(?:rs\.?|inr|₹)?\s*([0-9,]+)\s*(?:and|-|to)\s*(?:rs\.?|inr|₹)?\s*([0-9,]+)/);
+    const under = lower.match(/\b(?:under|below|less than)\s*(?:rs\.?|inr|rupees?)?\s*([0-9,]+)/);
+    const between = lower.match(/\bbetween\s*(?:rs\.?|inr|rupees?)?\s*([0-9,]+)\s*(?:and|-|to)\s*(?:rs\.?|inr|rupees?)?\s*([0-9,]+)/);
     if (between) {
       plan.priceRange.min = Number(between[1].replace(/,/g, ""));
       plan.priceRange.max = Number(between[2].replace(/,/g, ""));
@@ -58,6 +58,7 @@ class AgenticSearchService {
       "below",
       "budget",
       "best",
+      "high",
       "for",
       "the",
       "a",
@@ -104,6 +105,11 @@ class AgenticSearchService {
       results: response.results
     };
   }
+}
+
+function matchesTerm(text, term) {
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+  return new RegExp(`\\b${escaped}\\b`).test(text);
 }
 
 module.exports = { AgenticSearchService };

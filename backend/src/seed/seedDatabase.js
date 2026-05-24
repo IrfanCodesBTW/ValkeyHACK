@@ -16,7 +16,7 @@ async function seedDatabase(store) {
       quantity: String(product.inventory.quantity),
       reserved: String(product.inventory.reserved)
     });
-    if (store.capabilities?.search) {
+    if (store.capabilities?.searchModule) {
       try {
         await store.sendCommand(["FT.SUGADD", "autocomplete", product.name, "1"]);
       } catch (error) {}
@@ -104,6 +104,7 @@ async function ensureSearchIndex(store) {
     return true;
   } catch (error) {
     console.warn(`Search index unavailable: ${error.message}`);
+    if (store.capabilities) store.capabilities.search = false;
     return false;
   }
 }

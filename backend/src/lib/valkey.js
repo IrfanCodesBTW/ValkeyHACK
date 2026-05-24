@@ -3,7 +3,7 @@ const config = require("../config");
 const MemoryStore = require("./memoryStore");
 
 async function detectCapabilities(client) {
-  const capabilities = { json: false, search: false };
+  const capabilities = { json: false, search: false, searchModule: false };
   try {
     await client.sendCommand(["JSON.GET", "__capability_probe__"]);
     capabilities.json = true;
@@ -13,12 +13,39 @@ async function detectCapabilities(client) {
 
   try {
     await client.sendCommand(["FT._LIST"]);
-    capabilities.search = true;
+    capabilities.searchModule = true;
+    capabilities.search = await detectFullTextSearch(client);
   } catch (error) {
     capabilities.search = false;
+    capabilities.searchModule = false;
   }
 
   return capabilities;
+}
+
+async function detectFullTextSearch(client) {
+  const indexName = `__capability_text_idx_${Date.now()}`;
+  try {
+    await client.sendCommand([
+      "FT.CREATE",
+      indexName,
+      "ON",
+      "HASH",
+      "PREFIX",
+      "1",
+      "__capability_text:",
+      "SCHEMA",
+      "name",
+      "TEXT"
+    ]);
+    await client.sendCommand(["FT.DROPINDEX", indexName]);
+    return true;
+  } catch (error) {
+    try {
+      await client.sendCommand(["FT.DROPINDEX", indexName]);
+    } catch (dropError) {}
+    return false;
+  }
 }
 
 async function createRedisStore() {
@@ -34,6 +61,7 @@ async function createRedisStore() {
     connected: client.isOpen,
     json: client.capabilities.json,
     search: client.capabilities.search,
+    searchModule: client.capabilities.searchModule,
     memory: false
   });
   return client;

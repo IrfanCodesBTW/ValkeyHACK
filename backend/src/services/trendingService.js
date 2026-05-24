@@ -1,4 +1,5 @@
 const weights = { view: 1, cart: 3, purchase: 8 };
+const { enrichProduct } = require("./productPresenter");
 
 class TrendingService {
   constructor(store, repos) {
@@ -40,7 +41,7 @@ class TrendingService {
     const products = [];
     for (const row of rows) {
       const product = await this.repos.products.get(row.value);
-      if (product) products.push({ ...product, trendingScore: row.score });
+      if (product) products.push({ ...(await enrichProduct(this.store, product)), trendingScore: row.score });
     }
     return { window, results: products };
   }

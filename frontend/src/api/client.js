@@ -43,6 +43,7 @@ export const api = {
   trackView: (productId) => request("/api/events/view", { method: "POST", body: { productId } }),
   trending: (params = {}) => request(`/api/trending?${new URLSearchParams(clean(params))}`),
   search: (params = {}) => request(`/api/search?${new URLSearchParams(clean(params))}`),
+  suggestions: (q) => request(`/api/search/suggest?${new URLSearchParams(clean({ q }))}`),
   agenticSearch: (query) => request("/api/agentic-search", { method: "POST", body: { query } }),
   recommendations: (params = {}) => request(`/api/recommendations?${new URLSearchParams(clean(params))}`),
   checkout: (body, idempotencyKey) =>

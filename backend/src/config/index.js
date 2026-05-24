@@ -21,6 +21,9 @@ const config = {
     ttlSeconds: number(process.env.SESSION_TTL_SECONDS, 86400),
     secureCookie: bool(process.env.COOKIE_SECURE, false)
   },
+  cart: {
+    ttlSeconds: number(process.env.CART_TTL_SECONDS, 604800)
+  },
   llm: {
     geminiApiKey: process.env.GEMINI_API_KEY || "",
     groqApiKey: process.env.GROQ_API_KEY || ""
